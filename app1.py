@@ -7,7 +7,7 @@ import plotly.express as px
 
 # Load model and data
 best_model = joblib.load("model.pkl")
-data = pd.read_csv("movie.csv")
+data = pd.read_csv("movie_sample.csv")
 data_sample = data.sample(20, random_state=42).copy()
 data_sample['predicted'] = best_model.predict(data_sample['text'])
 
