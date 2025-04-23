@@ -28,7 +28,8 @@ sentiment_counts.columns = ['Sentiment', 'Count']
 pie_fig = px.pie(sentiment_counts, names='Sentiment', values='Count', title='Sentiment Prediction Distribution')
 
 app = dash.Dash(__name__)
-
+server = app.server
+app.title = "Sentiment movie analyser"
 app.layout = html.Div([
     html.H1("Movie Review Sentiment Classifier (Naive Bayes)"),
 
