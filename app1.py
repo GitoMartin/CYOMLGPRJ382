@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output, State, dash_table
 import joblib
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import plotly.express as px
 
 # Load model and data
 best_model = joblib.load("../artifacts/model.pkl")
@@ -19,6 +20,13 @@ precision = precision_score(y_true, y_pred, average='weighted')
 recall = recall_score(y_true, y_pred, average='weighted')
 f1 = f1_score(y_true, y_pred, average='weighted')
 
+# Prepare pie chart with string labels
+label_map = {0: 'Negative', 1: 'Positive'}
+mapped_preds = pd.Series(y_pred).map(label_map)
+sentiment_counts = mapped_preds.value_counts().reset_index()
+sentiment_counts.columns = ['Sentiment', 'Count']
+pie_fig = px.pie(sentiment_counts, names='Sentiment', values='Count', title='Sentiment Prediction Distribution')
+
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
@@ -27,12 +35,37 @@ app.layout = html.Div([
     html.Div([
         html.H3("Model Performance Metrics"),
         html.Ul([
-            html.Li(f"Accuracy: {accuracy:.2f}"),
-            html.Li(f"Precision: {precision:.2f}"),
-            html.Li(f"Recall: {recall:.2f}"),
-            html.Li(f"F1 Score: {f1:.2f}"),
+            html.Li(f"Accuracy: {accuracy:.4f}"),
+            html.Li(f"Precision: {precision:.4f}"),
+            html.Li(f"Recall: {recall:.4f}"),
+            html.Li(f"F1 Score: {f1:.4f}"),
         ])
     ], style={'marginBottom': 30}),
+     html.H1("Model Evaluation Metrics", style={'textAlign': 'center'}),
+    
+    html.Div([
+        html.H3("Accuracy", style={'fontWeight': 'bold'}),
+        html.P("Accuracy measures the overall correctness of the model. It is the ratio of correctly predicted observations to the total observations."),
+        html.P("Formula: Accuracy = (True Positives + True Negatives) / Total Predictions")
+    ], style={'padding': '20px', 'border': '1px solid #ccc', 'margin': '10px'}),
+    
+    html.Div([
+        html.H3("Precision", style={'fontWeight': 'bold'}),
+        html.P("Precision measures how many of the predicted positives are actually positive."),
+        html.P("Formula: Precision = True Positives / (True Positives + False Positives)")
+    ], style={'padding': '20px', 'border': '1px solid #ccc', 'margin': '10px'}),
+    
+    html.Div([
+        html.H3("Recall", style={'fontWeight': 'bold'}),
+        html.P("Recall measures how many of the actual positives were correctly identified."),
+        html.P("Formula: Recall = True Positives / (True Positives + False Negatives)")
+    ], style={'padding': '20px', 'border': '1px solid #ccc', 'margin': '10px'}),
+    
+    html.Div([
+        html.H3("F1 Score", style={'fontWeight': 'bold'}),
+        html.P("F1 Score is the harmonic mean of precision and recall. It balances both metrics, especially in imbalanced datasets."),
+        html.P("Formula: F1 = 2 * (Precision * Recall) / (Precision + Recall)")
+    ], style={'padding': '20px', 'border': '1px solid #ccc', 'margin': '10px'}),
 
     html.Div([
         dcc.Textarea(
@@ -50,8 +83,8 @@ app.layout = html.Div([
         id='sample-table',
         columns=[
             {'name': 'Review', 'id': 'text'},
-            {'name': 'Actual Label', 'id': 'label'},
-            {'name': 'Predicted Label', 'id': 'predicted'}
+            {'name': 'Actual Sentiment', 'id': 'label'},
+            {'name': 'Predicted Sentiment', 'id': 'predicted'}
         ],
         data=data_sample.to_dict('records'),
         style_table={'height': '300px', 'overflowY': 'auto'},
@@ -61,7 +94,10 @@ app.layout = html.Div([
             'height': 'auto',
         },
         page_size=20
-    )
+    ),
+
+    html.H3("Sentiment Prediction Distribution"),
+    dcc.Graph(figure=pie_fig)
 ])
 
 @app.callback(
@@ -72,7 +108,8 @@ app.layout = html.Div([
 def predict_sentiment(n_clicks, input_text):
     if n_clicks > 0 and input_text:
         prediction = best_model.predict([input_text])[0]
-        return f"Predicted Sentiment: {prediction}"
+        sentiment = label_map.get(prediction, str(prediction))
+        return f"Predicted Sentiment: {sentiment}"
     return ""
 
 if __name__ == '__main__':
